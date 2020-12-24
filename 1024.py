@@ -144,7 +144,7 @@ class Autoreply:
 
     def getreply(self):
         #自定义回复内容，记得修改随机数
-        reply=['期待你下次更精彩的分享哈','感谢分享','论坛有你更精彩','路过看看就好','小菜鸟路过仰望大佬']
+        reply=['期待你下次更精彩的分享哈','感谢分享哦','论坛有你更精彩','路过看看就好','小菜鸟路过仰望大佬']
         reply_m=random.randint(0,4)
         reply_news=reply[reply_m]
         self.reply_news=reply_news.encode('gb2312')
