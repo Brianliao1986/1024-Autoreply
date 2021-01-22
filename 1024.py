@@ -130,16 +130,16 @@ class Autoreply:
         #print('请求链接是: '+geturl)
     
     #不知道啥用，留着吧
-    def getmatch(self):
-        sleep(2)
-        get=requests.get(self.geturl,headers=self.headers,cookies=self.cookies)
-        sleep(2)
-        get=get.text.encode('iso-8859-1').decode('gbk')
-        pat='<h4>.*</h4>'
-        res=re.search(pat,get)
-        res=res.group(0).replace('<h4>','').replace('</h4>','')
-        res='Re:'+res
-        self.res=res
+    #def getmatch(self):
+    #    sleep(2)
+     #   get=requests.get(self.geturl,headers=self.headers,cookies=self.cookies)
+      #  sleep(2)
+       # get=get.text.encode('iso-8859-1').decode('gbk')
+        #pat='<h4>.*</h4>'
+        #res=re.search(pat,get)
+        #res=res.group(0).replace('<h4>','').replace('</h4>','')
+        #res='Re:'+res
+        #self.res=res
         #print(res)
 
     def getreply(self):
