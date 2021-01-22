@@ -5,12 +5,18 @@ import onetimepass as otp
 from time import sleep
 from urllib import parse
 import os
-from getver import Getver
+from getver1 import Getver
+import logging
 
 class Autoreply:
     result=None
     over=False
     flag=False
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    logger.addHandler(ch)
     loginurl = 'http://t66y.com/login.php'
     url='http://t66y.com/thread0806.php?fid=7&search=today'
     posturl='http://t66y.com/post.php?'
@@ -22,13 +28,13 @@ class Autoreply:
         'Proxy-Connection': 'keep-alive',
         'Referer': 'http://t66y.com/index.php',
         'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4209.2 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
     }
     headers1={
         'Host': 't66y.com',
         'Proxy-Connection': 'keep-alive',
         'Referer': 'http://t66y.com/login.php',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4209.2 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
     }
     headers2={
         'Host': 't66y.com',
@@ -36,11 +42,11 @@ class Autoreply:
         'Content-Type': 'application/x-www-form-urlencoded',
         'Proxy-Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4209.2 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
         }
 
     def __init__(self,user,password,secret):
-        self.user= user.encode('gb2312')
+        self.user= user.encode('gb18030')
         self.password= password
         self.secret =secret
 
@@ -105,17 +111,21 @@ class Autoreply:
     def gettodaylist(self):
         pat=('htm_data/\w+/\w+/\w+.html')
         con=self.s.get(self.url,headers=self.headers)
-        con = con.text.encode('iso-8859-1').decode('gbk')
+        con = con.text.encode('iso-8859-1').decode('gbk','ignore')
+        match=re.findall(pat,con)
+        self.match=match
         qiuzhutie=con.find('求片求助貼')
         qiuzhutie=con[qiuzhutie-100:qiuzhutie]
-        qiuzhutielink=re.findall(pat,qiuzhutie)
-        print('求助帖链接是:'+qiuzhutielink[0])
+        if re.findall(pat,qiuzhutie)!=[]:
+            qiuzhutielink=re.findall(pat,qiuzhutie)
+        else:
+            qiuzhutielink=['no']
+            self.match.append('no')
+        self.logger.debug('求助帖链接是:'+qiuzhutielink[0])
         self.black_list.append(qiuzhutielink[0])
-        match=re.findall(pat,con)
         try:
             for data in self.black_list:
-                match.remove(data)
-            self.match=match
+                self.match.remove(data)
         except:
             print('移除失败，知道因为啥。。。')
             pass
@@ -127,28 +137,34 @@ class Autoreply:
         self.geturl=geturl
         tid=self.match[m][16:len(self.match[m])-5]
         self.tid=tid
+        self.match.remove(self.match[m])
         #print('请求链接是: '+geturl)
-    
+
+    def browse(self):
+        res=requests.get(url=self.geturl,headers=self.headers,cookies=self.cookies)
+        #res=res.text.encode('iso-8859-1').decode('gbk')
+        #print(res)
+
     #不知道啥用，留着吧
     def getmatch(self):
-      sleep(2)
-      get=requests.get(self.geturl,headers=self.headers,cookies=self.cookies)
-      sleep(2)
-      get=get.text.encode('iso-8859-1').decode('gbk')
-      pat='<h4>.*</h4>'
-      res=re.search(pat,get)
-      res=res.group(0).replace('<h4>','').replace('</h4>','')
-      res='Re:'+res
-      self.res=res
-      print(res)
+        sleep(2)
+        get=requests.get(self.geturl,headers=self.headers,cookies=self.cookies)
+        sleep(2)
+        get=get.text.encode('iso-8859-1').decode('gbk')
+        pat='<b>本頁主題:</b> .*</td>'
+        res=re.search(pat,get)
+        res=res.group(0).replace('<b>本頁主題:</b> ','').replace('</td>','')
+        res='Re:'+res
+        self.res=res
+        #print(res)
 
     def getreply(self):
         #自定义回复内容，记得修改随机数
-        reply=['期待你下次更精彩的分享哈','感谢分享哦','论坛有你更精彩','路过看看就好','小菜鸟路过仰望大佬']
-        reply_m=random.randint(0,4)
+        reply=['感谢分享','感谢你的分享','谢谢分享','多谢分享']
+        reply_m=random.randint(0,3)
         reply_news=reply[reply_m]
-        self.reply_news=reply_news.encode('gb2312')
-        print("本次回复内容是:"+reply_news)
+        self.reply_news=reply_news.encode('gb18030')
+        self.logger.debug("本次回复内容是:"+reply_news)
 
     #暂时没用，看以后了
     # def encodepost(self):
@@ -196,6 +212,9 @@ class Autoreply:
         num=re.search(pat,index).group(0)
         num=num.replace('共發表帖子: ','')
         return num
+    
+    def debug(self,content):
+        self.logger.debug(content)
 
 if __name__ == "__main__":
     n=0
@@ -209,50 +228,56 @@ if __name__ == "__main__":
     while success is None:
         au=auto.login1()
         if au=='登录尝试次数过多,需输入验证码':
-            print('登录尝试次数过多,需输入验证码')
+            auto.debug('登录尝试次数过多,需输入验证码')
             auto.getverwebp()
             getcd=Getver()
             vercode=getcd.getcode()
+            auto.debug(vercode)
             while auto.inputvercode(vercode)=='验证码不正确，请重新输入':
+                auto.debug('验证码不正确，请重新输入')
                 auto.getverwebp()
                 vercode=getcd.getcode()
-                print('验证码不正确，请重新输入')
+                auto.debug(vercode)
             if auto.login1()=='賬號已開啟兩步驗證':
                 if auto.login2()=='已經順利登錄':
-                    print('登录成功')
+                    auto.debug('登录成功')
                     success = True
                     au=''
         else:
             if au=='賬號已開啟兩步驗證':
                 if auto.login2()=='已經順利登錄':
-                    print('登录成功')
+                    auto.debug('登录成功')
                     success = True
                     au=''
     m=auto.getnumber()
     auto.gettodaylist()
     #回复
     while n<10 and suc is False:
-        print("当前在第"+str(n+1)+'个。')
-        auto.getonelink()
-        auto.getreply()
-        auto.getmatch()
-        sleeptime=random.randint(1024,2048)
-        au=auto.postreply()
-        if au=='回复成功':
-            print('回复成功')
-            n=n+1
-            print('休眠'+str(sleeptime)+'s...')
-            sleep(sleeptime)
-            print('休眠完成')
-        elif au=='今日已达上限':
-            print('回复失败，今日次数已达10次')
-            suc=True
-        else:
-            print('1024限制！！！')
-            print('休眠'+str(sleeptime)+'s...')
-            sleep(sleeptime)
-            print('休眠完成')
+        try:
+            auto.debug("当前在第"+str(n+1)+'个。')
+            auto.getonelink()
+            auto.browse()
+            auto.getreply()
+            auto.getmatch()
+            sleeptime=random.randint(1024,2048)
+            au=auto.postreply()
+            if au=='回复成功':
+                auto.debug('回复成功')
+                n=n+1
+                auto.debug('休眠'+str(sleeptime)+'s...')
+                sleep(sleeptime)
+                auto.debug('休眠完成')
+            elif au=='今日已达上限':
+                auto.debug('回复失败，今日次数已达10次')
+                suc=True
+            else:
+                auto.debug('1024限制！！！')
+                auto.debug('休眠'+str(sleeptime)+'s...')
+                sleep(sleeptime)
+                auto.debug('休眠完成')
+        except:
+            print('回复失败，重试')
     n=auto.getnumber()
-    print('开始时发表帖子:'+m)
-    print('结束时发表帖子:'+n)
-    print('回复'+str(int(m)-int(n))+'次')
+    auto.debug('开始时发表帖子:'+m)
+    auto.debug('结束时发表帖子:'+n)
+    auto.debug('回复'+str(int(n)-int(m))+'次')
